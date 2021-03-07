@@ -16,22 +16,38 @@ s.listen(2)
 print("Waiting for connection. Server started...")
 
 
-def threadedClient(conn):
-    conn.send(str.encode("Connected..."))
+def readPos(str):
+    str = str.split(",")
+    return int(str[0]), int(str[1])
+
+
+def makePos(tup):
+    return str(tup[0]) + "," + str(tup[1])
+
+
+pos = [(0, 0), (100, 100)]
+
+
+def threadedClient(conn, player):
+    conn.send(str.encode(makePos(pos[player])))
     reply = ""
     while True:
         try:
-            data = conn.recv(2048)
-            reply = data.decode("utf-8")
+            data = readPos(conn.recv(2048).decode())
+            pos[player] = data
 
             if not data:
                 print("Disconnected...")
                 break
             else:
-                print("Received :", reply)
+                if player == 1:
+                    reply = pos[0]
+                else:
+                    reply = pos[1]
+                print("Received :", data)
                 print("Sending  :", reply)
 
-            conn.sendall(str.encode(reply))
+            conn.sendall(str.encode(makePos(reply)))
         except:
             break
 
@@ -39,8 +55,10 @@ def threadedClient(conn):
     conn.close()
 
 
+currentPlayer = 0
 while True:
     conn, addr = s.accept()
     print("Connected to:", addr)
 
-    start_new_thread(threadedClient, (conn, ))
+    start_new_thread(threadedClient, (conn, currentPlayer))
+    currentPlayer += 1
